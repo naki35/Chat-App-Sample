@@ -1,33 +1,29 @@
-const express = require('express');
+const express = require("express");
+var http = require("http");
 const app = express();
-const server = require('http').createServer(app);
-const io = require('socket.io')(server);
+const port = process.env.PORT || 5000;
+var server = http.createServer(app);
+var io = require("socket.io")(server);
 
-app.use(express.static('public'));
+//middlewre
+app.use(express.json());
+var clients = {};
 
-app.get('/scripts.js', (req, res) => {
-  res.sendFile(__dirname + '/scripts.js');
+io.on("connection", (socket) => {
+  console.log("connetetd");
+  console.log(socket.id, "has joined");
+  socket.on("signin", (id) => {
+    console.log(id);
+    clients[id] = socket;
+    console.log(clients);
+  });
+  socket.on("message", (msg) => {
+    console.log(msg);
+    let targetId = msg.targetId;
+    if (clients[targetId]) clients[targetId].emit("message", msg);
+  });
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
-
-
-
-io.on('connection', (socket) => {
-    console.log('A user connected');
-
-	socket.on('message', (message) => {
-        io.emit('message', message);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
-});
-
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log("server started");
 });
